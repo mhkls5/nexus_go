@@ -22,4 +22,11 @@ wget https://raw.githubusercontent.com/mhkls5/nexus_go/main/setup-nexus-node.sh
 chmod +x setup-nexus-node.sh
 
 # 3. 実行（ノードIDを聞かれます）
+
 ./setup-nexus-node.sh
+
+## ⚠️ 注意
+
+- このスクリプトは [Nexus XYZ](https://nexus.xyz) の公式ツールではありません。
+- [Nexus CLI](https://cli.nexus.xyz/) を簡単にセットアップできるようにするための **コミュニティ作成ツール**です。
+- 公式ドキュメント: https://docs.nexus.xyz
