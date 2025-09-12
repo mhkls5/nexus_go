@@ -11,4 +11,3 @@ Ubuntu VPS で簡単に Nexus Network CLI ノードを導入するためのシ�
 ```bash
 curl -sL https://raw.githubusercontent.com/mhkls5/nexus_go/main/install.sh | bash
 
-
