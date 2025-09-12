@@ -1,97 +1,66 @@
 #!/bin/bash
 
-# Nexus CLI ノード自動セットアップスクリプト
-# 前提: ユーザーは https://app.nexus.xyz でアカウント作成済み
-# 機能: インストール → 登録 → ノードID入力 → screen常駐起動
-# 注意: ノードIDは任意。後で app.nexus.xyz から確認・変更可能
+# スクリプトの実行中にエラーが発生した場合、即座に終了する
+set -e
 
-set -euo pipefail
+echo "🚀 Nexus CLIノードの自動インストールと起動を開始します..."
 
-SCREEN_NAME="nexus-node"
-INSTALL_URL="https://cli.nexus.xyz/"
-
-echo "========================================"
-echo "   Nexus CLI ノード自動セットアップ"
-echo "========================================"
-echo "🔹 前提: あなたは https://app.nexus.xyz で"
-echo "      アカウントを作成済みです。"
-echo "🔹 操作: 以下でノードIDを入力してください。"
-echo "      （例: mynode01、後でWebから変更可）"
-echo "========================================"
-
-# 1. 必要ツールのインストール
-if ! command -v curl &> /dev/null; then
-    echo "[*] curl をインストール中..."
-    apt update && apt install -y curl
-fi
-
-if ! command -v screen &> /dev/null; then
-    echo "[*] screen をインストール中..."
-    apt install -y screen
-fi
-
-# 2. CLIのインストール
-if ! command -v nexus-network &> /dev/null; then
-    echo "[*] Nexus CLI をインストール中..."
-    curl -fsSL "$INSTALL_URL" | sh
-    echo "[+] CLIのインストール完了"
-
-    # PATHの更新
-    source ~/.bashrc || true
-    source ~/.zshrc || true
-else
-    echo "[+] CLIは既にインストール済み"
-fi
-
-# 3. 既に登録済みか確認
-CREDENTIALS="$HOME/.nexus/credentials.json"
-if [ -f "$CREDENTIALS" ]; then
-    echo "[*] 既に登録済み: $CREDENTIALS"
-    echo "    削除する場合は rm -f $CREDENTIALS"
-else
-    # 4. register-user でアカウントとリンク
-    echo
-    echo "[*] NexusアカウントとCLIをリンク中..."
-    echo "    （app.nexus.xyzで作成したアカウント）"
-    nexus-network register-user
-
-    # 5. register-node でノード登録
-    echo
-    echo "[*] ノードを登録中..."
-    nexus-network register-node
-fi
-
-# 6. ノードIDの入力
-echo
-echo "🔹 CLI起動時のノード名を入力してください"
-echo "   （例: mynode01、後でapp.nexus.xyzで変更可）"
-read -p "ノードID: " NODE_ID
+# --- ノードIDの入力 ---
+read -p "ノードIDを入力してください: " NODE_ID
 
 if [ -z "$NODE_ID" ]; then
-    echo "❌ エラー: ノードIDが空です。"
+  echo "❌ ノードIDが入力されていません。スクリプトを終了します。"
+  exit 1
+fi
+
+echo "✅ ノードID: $NODE_ID を使用します。"
+
+# --- 必要な依存関係のインストール ---
+echo "⚙️ 必要な依存関係をインストール中..."
+sudo apt-get update
+sudo apt-get install -y git curl build-essential
+
+# --- Nexus CLIのダウンロードとビルド ---
+echo "📦 Nexus CLIのソースコードをダウンロード中..."
+# 最新のリリースバージョンを取得する代わりに、mainブランチを使用します。
+# 特定のバージョンを指定する場合は、このURLを変更してください。
+if [ -d "nexus" ]; then
+    echo "警告: 'nexus' ディレクトリが既に存在します。既存のディレクトリを使用します。"
+else
+    git clone https://github.com/nexus-xyz/nexus.git
+fi
+cd nexus
+
+echo "🛠️ Nexus CLIをビルド中..."
+./build.sh
+
+# ビルドしたバイナリを$PATHが通っている場所に移動
+echo "📁 バイナリを /usr/local/bin/ に移動中..."
+sudo cp ./target/release/nexus-cli /usr/local/bin/
+
+echo "✅ Nexus CLIのインストールが完了しました！"
+echo ""
+
+# --- ノードのバックグラウンド起動 ---
+echo "🚀 Nexus CLIノードをバックグラウンドで起動します..."
+echo "ログは '~/nexus_node.log' ファイルに書き込まれます。"
+
+# nohup: ログアウトしてもプロセスを終了させない
+# & : プロセスをバックグラウンドで実行
+# ノードIDを引数として渡す
+nohup nexus-cli run --testnet --node "$NODE_ID" > ~/nexus_node.log 2>&1 &
+
+# プロセスが起動していることを確認
+echo "🧐 プロセスの状態を確認中..."
+if pgrep -f "nexus-cli run --testnet --node $NODE_ID" > /dev/null
+then
+    echo "🎉 プロセスが正常に稼働中です。VPSを切断してもプロセスは維持されます。"
+    echo "ログファイル: ~/nexus_node.log"
+else
+    echo "❌ プロセスの起動に失敗したようです。ログファイルを確認してください。"
     exit 1
 fi
 
-# 7. 既存のscreenセッションを停止
-if screen -list | grep -q "$SCREEN_NAME"; then
-    echo "[*] 既存のノードを停止: $SCREEN_NAME"
-    screen -S "$SCREEN_NAME" -X quit || true
-    sleep 2
-fi
-
-# 8. 新規起動
-echo "[*] ノードを起動中: $NODE_ID"
-screen -dmS "$SCREEN_NAME" nexus-network start --node-id "$NODE_ID"
-
-# 9. 完了メッセージ
-echo
-echo "✅ 成功！ノードがバックグラウンドで起動しました"
-echo "----------------------------------------"
-echo "🔧 状態確認:   screen -r $SCREEN_NAME"
-echo "🛑 停止するには: screen -S $SCREEN_NAME -X quit"
-echo "📁 資格情報:   $CREDENTIALS"
-echo "🌐 ノードID:    $NODE_ID"
-echo "💡 SSH切断後も動作し続けます"
-echo "🌐 後でノード名を変更するには:"
-echo "   https://app.nexus.xyz の [Nodes] から編集"
-echo "----------------------------------------"
+echo ""
+echo "これで、`nexus-cli`コマンドを使ってNexus Testnetノードを操作できます。"
+echo "ノードの状態を確認するには、`tail -f ~/nexus_node.log`を実行してください。"
