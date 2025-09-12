@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nexus CLI ノード自動セットアップスクリプト
-# 前提: ユーザーは app.nexus.xyz でアカウント作成済み
+# 前提: ユーザーは https://app.nexus.xyz でアカウント作成済み
 # 機能: インストール → 登録 → ノードID入力 → screen常駐起動
 # 注意: ノードIDは任意。後で app.nexus.xyz から確認・変更可能
 
