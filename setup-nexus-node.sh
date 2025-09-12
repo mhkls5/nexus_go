@@ -1,3 +1,4 @@
+cat > setup-nexus-node.sh << 'EOF'
 #!/bin/bash
 
 # Nexus CLI ノード自動セットアップスクリプト
@@ -8,7 +9,7 @@
 set -euo pipefail
 
 SCREEN_NAME="nexus-node"
-INSTALL_URL="https://cli.nexus.xyz/"  # ← ここにスペースなし！
+INSTALL_URL="https://cli.nexus.xyz/"
 
 echo "========================================"
 echo "   Nexus CLI ノード自動セットアップ"
@@ -95,3 +96,4 @@ echo "💡 SSH切断後も動作し続けます"
 echo "🌐 後でノード名を変更するには:"
 echo "   https://app.nexus.xyz の [Nodes] から編集"
 echo "----------------------------------------"
+EOF
