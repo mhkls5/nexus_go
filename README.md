@@ -14,7 +14,7 @@
 
 VPS に SSH 接続して、以下の3行を順番に実行するだけ👇
 
-
+```bash
 # 1. スクリプトをダウンロード（IPv4限定で安定）
 wget --inet4-only https://raw.githubusercontent.com/mhkls5/nexus_go/main/setup-nexus-node.sh
 
