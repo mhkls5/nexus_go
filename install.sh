@@ -2,10 +2,8 @@
 
 # ========================================
 # Nexus CLI Node Installer (Testnet III)
-# For Ubuntu VPS | Simple & Reliable
-# Author: mhkls5
+# For Ubuntu VPS | Fixed & Reliable
 # =========================================
-
 set -euo pipefail
 
 echo "🚀 Nexus CLI ノード インストーラーを開始します..."
@@ -16,6 +14,7 @@ sudo apt install -y curl jq wget systemd
 
 # --- Nexus CLI バイナリのダウンロード ---
 NEXUS_BIN="/usr/local/bin/nexus"
+# 🔧 重要: URL末尾の不要なスペースを完全削除
 CLI_URL="https://github.com/nexus-xyz/network-cli/releases/latest/download/nexus-linux-amd64"
 
 echo "⬇️ Nexus CLI をダウンロード中..."
