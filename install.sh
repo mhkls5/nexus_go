@@ -109,7 +109,7 @@ sudo systemctl enable nexus-node.service
 sudo systemctl start nexus-node.service
 
 # --- 結果表示 ---
-echo "🎉 セットアップ完了！ノードはバックグラウンドで稼働中です。"
+echo "🎉 セットアップ完了！ノードはバックグラウンドで稼働中!"
 
 echo ""
 echo "📊 状態確認:"
