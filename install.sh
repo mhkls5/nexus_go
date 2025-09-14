@@ -6,7 +6,7 @@
 # 前提: Ubuntu VPS、Nexusサイトでアカウント登録済み、ノードID発行済み
 # このスクリプトは依存関係のインストール、Nexus CLIのセットアップを行い、
 # ノードをバックグラウンドのscreenセッションで継続的に実行します。
-# ログは /root/nexus-node.log に保存されます。
+# ログは /root/nexus-node.log に保存され、制御文字は除去されます。
 # セッションに接続: screen -r nexus-node
 # セッションから離れる: Ctrl+A してから D
 # ノード停止: screen -S nexus-node -X quit
@@ -59,11 +59,11 @@ for session in $(screen -ls | grep nexus-node | awk '{print $1}'); do
     screen -S "$session" -X quit
 done
 
-# バックグラウンドで動作するscreenセッションを作成（標準入力を抑制）
+# バックグラウンドで動作するscreenセッションを作成（制御文字を広範に除去）
 echo "screenセッション 'nexus-node' でNexusノードをバックグラウンド起動します..."
 screen -dmS nexus-node bash -c "
     echo 'Nexusノードを起動中...' >> $LOG_FILE;
-    nexus-network start --node-id $NODE_ID < /dev/null >> $LOG_FILE 2>&1;
+    nexus-network start --node-id $NODE_ID < /dev/null | sed 's/\x1B\[[0-9;]*[mK]//g;s/M-\[.*//g;s/\x1B\[[0-9;]*[ABCDEFGHJKSTfhlmnsu]//g' >> $LOG_FILE 2>&1 </dev/null;
     echo 'ノードが起動しました。セッションは継続します.' >> $LOG_FILE;
     exec bash
 "
