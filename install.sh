@@ -2,74 +2,48 @@
 
 # ========================================
 # Nexus CLI Node Installer (Testnet III)
-# For Ubuntu VPS | Fixed & Reliable
+# Official Method: curl https://cli.nexus.xyz/ | sh
 # =========================================
 set -euo pipefail
 
 echo "🚀 Nexus CLI ノード インストーラーを開始します..."
 
-# --- 必須ツールのインストール ---
-sudo apt update -qq
-sudo apt install -y curl jq wget systemd
+# --- ステップ1: 公式インストールスクリプトを実行 ---
+echo "⬇️ 公式インストーラーから Nexus CLI をインストール中..."
+curl -sL https://cli.nexus.xyz/ | sh
 
-# --- Nexus CLI バイナリのダウンロード ---
-NEXUS_BIN="/usr/local/bin/nexus"
-# 🔧 重要: URL末尾の不要なスペースを完全削除
-CLI_URL="https://github.com/nexus-xyz/network-cli/releases/latest/download/nexus-linux-amd64"
+# --- PATHの設定（現在のシェルにも反映）---
+export PATH="$HOME/.nexus/bin:$PATH"
 
-echo "⬇️ Nexus CLI をダウンロード中..."
-wget -qO "$NEXUS_BIN" "$CLI_URL" || {
-    echo "❌ ダウンロード失敗: $CLI_URL"
-    echo "💡 正しいURLは https://docs.nexus.xyz を確認してください。"
-    exit 1
-}
-chmod +x "$NEXUS_BIN"
-
-# --- 設定ディレクトリ作成 ---
-NEXUS_DIR="$HOME/.nexus"
-mkdir -p "$NEXUS_DIR"
-
-# --- ノードIDの入力 ---
-read -p "🔧 ノードIDを入力してください: " NODE_ID
+# --- ステップ2: ノードIDの入力 ---
+echo ""
+read -p "🔧 使用するノードIDを入力してください: " NODE_ID
 if [[ -z "$NODE_ID" ]]; then
     echo "❌ ノードIDが空です。終了します。"
     exit 1
 fi
 
-# --- credentials.json に保存 ---
-cat > "$NEXUS_DIR/credentials.json" <<EOF
-{
-  "node_id": "$NODE_ID"
-}
-EOF
-chmod 600 "$NEXUS_DIR/credentials.json"
-echo "🔐 資格情報を $NEXUS_DIR/credentials.json に保存しました。"
-
-# --- register-node 実行 ---
-echo "🔄 ノードを登録中..."
-nexus register-node || echo "⚠️ 登録スキップ（既に登録済み？）"
-
-# --- systemdサービス登録 ---
+# --- ステップ3: systemdサービスの作成 ---
 SERVICE_FILE="/etc/systemd/system/nexus-node.service"
+
 sudo tee "$SERVICE_FILE" > /dev/null <<EOL
 [Unit]
-Description=Nexus CLI Proving Node
+Description=Nexus Network CLI Node
 After=network.target
 
 [Service]
 Type=simple
 User=$USER
-WorkingDirectory=$HOME
-ExecStart=/usr/local/bin/nexus prove
+Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:$HOME/.nexus/bin
+ExecStart=$HOME/.nexus/bin/nexus-network start --node-id $NODE_ID
 Restart=always
 RestartSec=5
-Environment=HOME=$HOME_DIR
 
 [Install]
 WantedBy=multi-user.target
 EOL
 
-# --- サービスの起動 ---
+# --- ステップ4: サービスの起動 ---
 echo "🔄 systemdサービスを有効化・起動中..."
 sudo systemctl daemon-reload
 sudo systemctl enable nexus-node.service
@@ -85,3 +59,5 @@ echo "   journalctl -u nexus-node.service -f"
 echo ""
 echo "🛑 停止: sudo systemctl stop nexus-node.service"
 echo "🔁 再起動: sudo systemctl restart nexus-node.service"
+echo ""
+echo "ℹ️ 注意: VPS再起動後も自動で起動します。"
