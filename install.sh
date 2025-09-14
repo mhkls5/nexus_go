@@ -31,12 +31,24 @@ echo "依存関係をインストールしています..."
 sudo apt update
 sudo apt install -y git curl screen
 
+# 既存のNexus CLIをクリア
+echo "既存のNexus CLIをクリアしています..."
+rm -rf ~/.nexus
+
 # Nexus CLIをインストール
 echo "Nexus CLIをインストールしています..."
 curl -sSL https://cli.nexus.xyz/ | bash -s y
 
-# シェル環境を更新
-source ~/.bashrc
+# PATHを明示的に設定
+export PATH="$HOME/.nexus/bin:$PATH"
+echo "PATHを更新: $PATH" | tee -a /root/nexus-node.log
+
+# Nexus CLIのインストール確認
+if ! command -v nexus-network >/dev/null 2>&1; then
+    echo "エラー: nexus-network コマンドが見つかりません。インストールに失敗しました。" | tee -a /root/nexus-node.log
+    exit 1
+fi
+echo "Nexus CLIバージョン: $(nexus-cli --version)" | tee -a /root/nexus-node.log
 
 # ログファイルの準備
 LOG_FILE="/root/nexus-node.log"
