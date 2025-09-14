@@ -54,12 +54,17 @@ echo "Nexus CLIバージョン: $(nexus-cli --version)"
 LOG_FILE="/root/nexus-node.log"
 echo "Nexusノードのログを $LOG_FILE に保存します"
 
-# バックグラウンドで動作するscreenセッションを作成
+# 既存のnexus-nodeセッションを停止
+for session in $(screen -ls | grep nexus-node | awk '{print $1}'); do
+    screen -S "$session" -X quit
+done
+
+# バックグラウンドで動作するscreenセッションを作成（標準入力を抑制）
 echo "screenセッション 'nexus-node' でNexusノードをバックグラウンド起動します..."
 screen -dmS nexus-node bash -c "
     echo 'Nexusノードを起動中...' >> $LOG_FILE;
-    nexus-network start --node-id $NODE_ID >> $LOG_FILE 2>&1;
-    echo 'ノードが起動しました。セッションは継続します。' >> $LOG_FILE;
+    nexus-network start --node-id $NODE_ID < /dev/null >> $LOG_FILE 2>&1;
+    echo 'ノードが起動しました。セッションは継続します.' >> $LOG_FILE;
     exec bash
 "
 
