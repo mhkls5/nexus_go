@@ -2,12 +2,16 @@
 
 # ========================================
 # Nexus CLI Node Installer (Testnet III)
-# 全員がそのまま使える！ノードIDは実行時に入力
+# 完全対応版：公式インストーラー後でもノードID入力可能
 # Usage: curl -sL https://... | bash -s
 # =========================================
 set -euo pipefail
 
 echo "🚀 Nexus CLI ノード インストーラーを開始します..."
+
+# --- Step 0: 標準入力を保存 ---
+#    公式インストーラーがstdinを奪うので、事前に確保
+exec 3<&0  # fd 3 に標準入力を保存
 
 # --- Step 1: 公式インストーラーでCLIをインストール ---
 echo "⬇️ 公式インストーラーから Nexus CLI をインストール中..."
@@ -16,22 +20,25 @@ curl -sL https://cli.nexus.xyz/ | sh
 # PATHを追加（現在のシェルにも反映）
 export PATH="$HOME/.nexus/bin:$PATH"
 
-# --- Step 2: ノードIDの入力（ここでユーザーが入力）---
+# --- Step 2: 保存した標準入力からノードIDを入力 ---
 echo ""
 echo "📌 準備ができました。次に、あなたのノードIDを入力します。"
 echo "💡 事前に取得が必要です:"
 echo "   https://app.nexus.xyz/nodes でサインイン → Node IDをコピー"
 echo ""
 
-# 🔥 ここでユーザーに入力を促す（-s 付きで実行すればちゃんと動く）
-read -p "🔧 ノードIDを入力してください: " NODE_ID
+# 🔥 ここで fd 3（保存した stdin）を使って入力
+read -u 3 -p "🔧 ノードIDを入力してください: " NODE_ID
+
+# --- Step 3: 標準入力クローズ ---
+exec 3<&-
 
 if [[ -z "$NODE_ID" ]]; then
     echo "❌ ノードIDが空です。再度実行してください。"
     exit 1
 fi
 
-# --- Step 3: systemdサービスの作成 ---
+# --- Step 4: systemdサービスの作成 ---
 SERVICE_FILE="/etc/systemd/system/nexus-node.service"
 
 sudo tee "$SERVICE_FILE" > /dev/null <<EOL
@@ -51,7 +58,7 @@ RestartSec=5
 WantedBy=multi-user.target
 EOL
 
-# --- Step 4: サービスの起動 ---
+# --- Step 5: サービスの起動 ---
 echo "🔄 systemdサービスを有効化・起動中..."
 sudo systemctl daemon-reload
 sudo systemctl enable nexus-node.service
