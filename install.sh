@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Nexus CLIノードセットアップスクリプト（Ubuntu用）
-# 使用方法: ./setup_nexus_node.sh [ノードID]
+# 使用方法: ./install.sh [ノードID]
 # ノードIDを引数として指定しない場合、入力プロンプトが表示されます。
 # 前提: Ubuntu VPS、Nexusサイトでアカウント登録済み、ノードID発行済み
 # このスクリプトは依存関係のインストール、Nexus CLIのセットアップを行い、
@@ -27,8 +27,9 @@ fi
 echo "ノードID: $NODE_ID でNexus CLIノードをセットアップします"
 
 # パッケージリストを更新し、依存関係をインストール
+echo "依存関係をインストールしています..."
 sudo apt update
-sudo apt install -y curl screen
+sudo apt install -y git curl screen
 
 # Nexus CLIをインストール
 echo "Nexus CLIをインストールしています..."
